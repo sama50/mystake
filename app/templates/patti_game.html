@@ -1,0 +1,151 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mystake demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        #show-card {
+            margin-left: 45%;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url('{% static "images/backgroud.jpg" %}');
+            /* Replace 'images/background.jpg' with your actual image path */
+            background-size: cover;
+        }
+        #card-option {
+            display: flex;
+            justify-content: space-around;
+        }
+        button {
+            margin-left: 2.5rem;
+        }
+        .mycard {
+            width: 10rem;
+            min-height: 15rem; /* Ensure it maintains space even without an image */
+            background-color: rgba(0, 0, 0, 0.1); /* Placeholder background color */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-img-top {
+            width: 100%;
+            height: auto; /* Ensure it maintains aspect ratio of the image */
+        }
+        .game-title{
+            text-align: center;
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container ">
+        <h1 class="game-title" >Patti Game</h1>
+    </div>
+    <div class="container mt-2" id="card-option">
+        <div class="card mycard">
+            <img src="" class="card-img-top" id="guess_img" alt="">
+        </div>
+        
+    </div>
+    <div class="container mt-2" id="card-option">
+        <div class="left-card">
+            <div class="card mycard">
+                <img src="" id="left-side-image" class="card-img-top" alt="">
+            </div>
+            <button class="btn btn-danger btn-lg mt-3" id="left">Left</button>
+        </div>
+        <div class="right-card">
+            <div class="card mycard">
+                <img src="" id="right-side-image" class="card-img-top" alt="">
+            </div>
+            <button class="btn btn-danger btn-lg mt-3" id="right">Right</button>
+        </div>
+    </div>
+    <div class="container" id="down-title" style="display: none;">
+        <h1 class="game-title" style="color: red;" >Select Your side</h1>
+    </div>
+    <div class="container " id="down-title">
+        <h1 id="winner-text" style="color: red; text-align: center;" ></h1>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        var isClicked = false;
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/patti/'
+        );
+        guss_image = document.getElementById('guess_img')
+        leftImage = document.getElementById("left-side-image")
+        rightImage = document.getElementById("right-side-image")
+        winnerText = document.getElementById("winner-text")
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log(data);
+            if (data.event_name === 'start_game') {
+                winnerText.innerText = ""
+                leftImage.src = ""
+                rightImage.src = ""
+    
+                document.getElementById("down-title").style.display = 'block';
+                const imgSrc = data.card_link || "";  
+                guss_image.src = imgSrc;
+            }else if (data.event_name === 'left_right'){
+                document.getElementById("down-title").style.display = 'none';
+                winnerText.innerText = ""
+                side = data.side
+                if(side == 0){
+                    // leff side 
+                    leftImage.src = data.card_link || "";
+                    rightImage.src = ""
+                }else{
+                    rightImage.src = data.card_link || "";
+                    leftImage.src = ""
+                }
+            }else if(data.event_name === 'send_winner'){
+                winnerText.innerText = `GAME OVER AND YOU ${data.is_you_win}`
+                isClicked = false
+                guss_image.src = ""
+            }
+            
+        };
+
+        // Corrected event listeners for buttons
+        const leftButton = document.getElementById("left");
+        const rightButton = document.getElementById("right");
+
+        leftButton.addEventListener("click", function(e) {
+            console.log("left clicked..");
+            if(isClicked){
+                alert("Already submitted");
+                return;
+            }
+            chatSocket.send(JSON.stringify({
+                'cardside': 0,
+                'eventname':'ansimage',
+            }));
+            isClicked = true;
+        });
+
+        rightButton.addEventListener("click", function(e) {
+            console.log("right clicked..");
+            if(isClicked){
+                alert("Already submitted");
+                return;
+            }
+            chatSocket.send(JSON.stringify({
+                'cardside': 1,
+                'eventname':'ansimage',
+            }));
+            isClicked = true;
+        });
+
+    </script>
+</body>
+</html>
